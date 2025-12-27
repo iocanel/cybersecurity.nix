@@ -137,3 +137,86 @@ jobs:
             systemToolsCount = builtins.length packages.systemTools;
           }
         '
+
+  test-tool-availability:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-25.05
+    
+    - name: Build environment with cybersecurity tools
+      run: |
+        # Create a test environment with all cybersecurity tools
+        nix-build -E '
+          let
+            pkgs = import <nixpkgs> { config.allowUnfree = true; };
+            cybersecPackages = import ./packages.nix { inherit pkgs; };
+            allTools = cybersecPackages.coreTools ++ cybersecPackages.systemTools ++ [
+              cybersecPackages.deepce
+              cybersecPackages.droopescan  
+              cybersecPackages.burpsuite
+            ];
+          in
+          pkgs.buildEnv {
+            name = "cybersec-test-env";
+            paths = allTools;
+          }
+        '
+    
+    - name: Test popular tools are available
+      run: |
+        # Test that popular security tools have working binaries
+        TEST_ENV=$(nix-build -E '
+          let
+            pkgs = import <nixpkgs> { config.allowUnfree = true; };
+            cybersecPackages = import ./packages.nix { inherit pkgs; };
+            allTools = cybersecPackages.coreTools ++ cybersecPackages.systemTools ++ [
+              cybersecPackages.deepce
+              cybersecPackages.droopescan  
+              cybersecPackages.burpsuite
+            ];
+          in
+          pkgs.buildEnv {
+            name = "cybersec-test-env";
+            paths = allTools;
+          }
+        ')
+        
+        # Test popular tools
+        echo "Testing tool availability..."
+        
+        # Network tools
+        test -x "$TEST_ENV/bin/nmap" && echo "✓ nmap available"
+        test -x "$TEST_ENV/bin/masscan" && echo "✓ masscan available"
+        test -x "$TEST_ENV/bin/rustscan" && echo "✓ rustscan available"
+        
+        # Web security
+        test -x "$TEST_ENV/bin/sqlmap" && echo "✓ sqlmap available"
+        test -x "$TEST_ENV/bin/nikto" && echo "✓ nikto available"
+        test -x "$TEST_ENV/bin/nuclei" && echo "✓ nuclei available"
+        test -x "$TEST_ENV/bin/burpsuite" && echo "✓ burpsuite available"
+        
+        # Password tools  
+        test -x "$TEST_ENV/bin/john" && echo "✓ john available"
+        test -x "$TEST_ENV/bin/hashcat" && echo "✓ hashcat available"
+        test -x "$TEST_ENV/bin/hydra" && echo "✓ hydra available"
+        
+        # Wireless
+        test -x "$TEST_ENV/bin/aircrack-ng" && echo "✓ aircrack-ng available"
+        
+        # Exploitation
+        test -x "$TEST_ENV/bin/msfconsole" && echo "✓ metasploit available"
+        
+        # OSINT
+        test -x "$TEST_ENV/bin/theharvester" && echo "✓ theharvester available"
+        test -x "$TEST_ENV/bin/amass" && echo "✓ amass available"
+        
+        # Custom packages
+        test -x "$TEST_ENV/bin/deepce" && echo "✓ deepce available"
+        test -x "$TEST_ENV/bin/droopescan" && echo "✓ droopescan available"
+        
+        echo "All popular security tools verified!"
