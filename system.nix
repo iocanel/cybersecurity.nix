@@ -11,6 +11,9 @@ in
   };
 
   config = mkIf config.cybersecurity.enable {
+    # Allow unfree packages for security tools like wpscan, burpsuite, etc.
+    nixpkgs.config.allowUnfree = true;
+    
     environment.systemPackages = with pkgs; 
       cybersecPackages.coreTools ++ 
       cybersecPackages.systemTools ++ 
