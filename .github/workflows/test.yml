@@ -164,6 +164,7 @@ jobs:
           pkgs.buildEnv {
             name = "cybersec-test-env";
             paths = allTools;
+            ignoreCollisions = true;
           }
         '
     
@@ -183,6 +184,7 @@ jobs:
           pkgs.buildEnv {
             name = "cybersec-test-env";
             paths = allTools;
+            ignoreCollisions = true;
           }
         ')
         
