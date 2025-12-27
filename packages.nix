@@ -26,7 +26,6 @@
     rustscan
     tcpdump
     binwalk
-    netcat
     netcat-gnu
     socat
     proxychains
