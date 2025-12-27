@@ -86,11 +86,6 @@
     
     # Metasploit Framework (system-wide installation preferred)
     metasploit
-    ruby
-    gem
-    bundler
-    rubyPackages.racc
-    rubyPackages.rbs
     
     armitage
     
