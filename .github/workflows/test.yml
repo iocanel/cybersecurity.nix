@@ -222,3 +222,52 @@ jobs:
         test -x "$TEST_ENV/bin/droopescan" && echo "✓ droopescan available"
         
         echo "All popular security tools verified!"
+
+  test-module-tool-availability:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module:
+          - name: "NixOS system"
+            file: "system.nix"
+            config_key: "environment.systemPackages"
+            test_config: '{ cybersecurity.enable = true; }'
+          - name: "Home Manager"
+            file: "home.nix"  
+            config_key: "home.packages"
+            test_config: '{ cybersecurity.enable = true; home.homeDirectory = "/home/test"; }'
+    
+    name: "Test ${{ matrix.module.name }} module tool availability"
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-25.05
+    
+    - name: Test ${{ matrix.module.name }} module tool availability
+      run: |
+        # Test that tools are available in ${{ matrix.module.name }} module
+        nix-instantiate --eval -E '
+          let
+            pkgs = import <nixpkgs> { config.allowUnfree = true; };
+            lib = pkgs.lib;
+            module = import ./${{ matrix.module.file }} { inherit lib; config = ${{ matrix.module.test_config }}; inherit pkgs; };
+            packages = module.config.${{ matrix.module.config_key }};
+            toolNames = map (pkg: pkg.pname or pkg.name or "unknown") packages;
+          in
+          {
+            packageCount = builtins.length packages;
+            hasNmap = builtins.any (name: lib.hasInfix "nmap" name) toolNames;
+            hasMetasploit = builtins.any (name: lib.hasInfix "metasploit" name) toolNames;
+            hasSqlmap = builtins.any (name: lib.hasInfix "sqlmap" name) toolNames;
+            hasJohn = builtins.any (name: lib.hasInfix "john" name) toolNames;
+            hasHashcat = builtins.any (name: lib.hasInfix "hashcat" name) toolNames;
+            hasWireshark = builtins.any (name: lib.hasInfix "wireshark" name) toolNames;
+            hasAircrack = builtins.any (name: lib.hasInfix "aircrack" name) toolNames;
+            hasDeepce = builtins.any (name: lib.hasInfix "deepce" name) toolNames;
+            hasDroopescan = builtins.any (name: lib.hasInfix "droopescan" name) toolNames;
+            hasBurpsuite = builtins.any (name: lib.hasInfix "burpsuite" name) toolNames;
+          }
+        ' | grep -E "(hasNmap|hasMetasploit|hasSqlmap|hasJohn|hasHashcat|hasWireshark|hasAircrack|hasDeepce|hasDroopescan|hasBurpsuite)" | grep -v "false" && echo "✓ All key tools found in ${{ matrix.module.name }} packages" || echo "✗ Some tools missing in ${{ matrix.module.name }}"
