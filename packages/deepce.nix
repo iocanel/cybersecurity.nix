@@ -4,17 +4,16 @@ pkgs.stdenv.mkDerivation rec {
   pname = "deepce";
   version = "2024-12-18";
   
-  src = pkgs.fetchurl {
-    url = "https://github.com/stealthcopter/deepce/raw/main/deepce.sh";
-    sha256 = "1q449pj2nfrbw78p4hwvv3bj69243z2lxjji53xip8lki87ra978";
+  src = pkgs.fetchFromGitHub {
+    owner = "stealthcopter";
+    repo = "deepce";
+    rev = "420b1d1ddb636f6bd277a105f580cd09b03517cc";
+    sha256 = "sha256-bLwLuC8FqWQvgqqM+TF252eJ9jo1MV0Y68kXk67izFM=";
   };
-  
-  dontUnpack = true;
-  dontBuild = true;
   
   installPhase = ''
     mkdir -p $out/bin
-    cp $src $out/bin/deepce
+    cp $src/deepce.sh $out/bin/deepce
     chmod +x $out/bin/deepce
   '';
   

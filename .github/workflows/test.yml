@@ -1,0 +1,88 @@
+name: Test Cybersecurity Module
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-packages:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-25.05
+    
+    - name: Test custom package builds
+      run: |
+        nix-build -E 'with import <nixpkgs> {}; callPackage ./packages/deepce.nix {}'
+        nix-build -E 'with import <nixpkgs> {}; callPackage ./packages/droopescan.nix {}'
+    
+    - name: Test module evaluation (system)
+      run: |
+        nix-instantiate --eval -E '
+          let
+            pkgs = import <nixpkgs> {};
+            lib = pkgs.lib;
+            system = lib.evalModules {
+              modules = [ 
+                ./system.nix
+                { cybersecurity.enable = true; }
+              ];
+              specialArgs = { inherit pkgs; };
+            };
+          in
+          builtins.length system.config.environment.systemPackages > 0
+        '
+    
+    - name: Test module evaluation (home)
+      run: |
+        nix-instantiate --eval -E '
+          let
+            pkgs = import <nixpkgs> {};
+            lib = pkgs.lib;
+            home = lib.evalModules {
+              modules = [ 
+                ./home.nix
+                { 
+                  cybersecurity.enable = true;
+                  home.homeDirectory = "/home/test";
+                }
+              ];
+              specialArgs = { inherit pkgs; };
+            };
+          in
+          builtins.length home.config.home.packages > 0
+        '
+
+  test-package-categories:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-25.05
+    
+    - name: Test package categories build
+      run: |
+        nix-instantiate --eval -E '
+          let
+            pkgs = import <nixpkgs> {};
+            packages = import ./packages.nix { inherit pkgs; };
+          in
+          {
+            coreToolsLength = builtins.length packages.coreTools;
+            systemToolsLength = builtins.length packages.systemTools;
+            customPackages = {
+              deepce = packages.deepce.name;
+              droopescan = packages.droopescan.name;
+              burpsuite = packages.burpsuite.name;
+            };
+          }
+        '
