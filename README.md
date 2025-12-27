@@ -1,6 +1,16 @@
-# Cybersecurity Tools Module
+# Cybersecurity NixOS/Home Manager Module
 
-A comprehensive NixOS/Home Manager module providing security testing and analysis tools.
+A NixOS/Home Manager module providing Cybersecurity and penetration testing tools.
+
+## Rationale
+
+Kali Linux is a popular distribution among Cybersecurity professional. 
+However, I don't want to change my main OS to Kali.
+
+I prefer using **NixOS** for its:
+- Declarative configuration
+- Reproducibility
+- Multiple environment support
 
 ## Structure
 
